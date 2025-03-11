@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link href="https://fonts.googleapis.com/css2?family=Bangers&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Random Character Picker</title>
+<style>
+    html {
+        --s: 80px;
+        --_g: radial-gradient(#F4EAD5 31%,#0000 32%);
+        --_l: radial-gradient(#594F4F 15%,#0000 16%);
+        background: var(--_l),var(--_l),var(--_g),var(--_g),#45ADA8;
+        background-position: 0 0,var(--s) var(--s);
+        background-size: calc(2*var(--s)) calc(2*var(--s));
+        animation:
+            x 2s cubic-bezier(0.5,92,0.5,-92) infinite,
+            y 2s cubic-bezier(0.5,92,0.5,-92) infinite -.5s;
+    }
+    @keyframes x {
+        to {
+            background-position-x: -.25px, calc(var(--s) - 1px),-.5px,calc(var(--s) - .5px);
+        }
+    }
+    @keyframes y {
+        to {
+            background-position-y: -.25px, calc(var(--s) - 1px),.25px,calc(var(--s) - .5px);
+        }
+    }
+    body {
+        font-family: 'Bangers', cursive;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 0;
+        margin: 0;
+        overflow: hidden;
+        color: #000;
+    }
+    button {
+        font-family: 'Bangers', cursive;
+        padding: 2vh 4vw;
+        font-size: 2.5vw;
+        cursor: pointer;
+        margin-top: 3vh;
+        border-radius: 20px;
+        border: 2px solid #2E2A24;
+        z-index: 1;
+        position: relative;
+    }
+    .button-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2vh;
+        margin-top: 3vh;
+        z-index: 1;
+        position: relative;
+    }
+    .character-container {
+        font-size: 4vw;
+        font-family: 'Bangers', cursive;
+        font-weight: bold;
+        z-index: 1;
+        position: relative;
+    }
+    footer {
+        position: fixed;
+        bottom: 5px;
+        left: 5px;
+        text-align: left;
+        color: #000;
+        font-size: 1vw;
+        z-index: 1;
+    }
+</style>
+</head>
+<body>
+<h1>If you, like me,</br>don't know who to be</br>for Purim --</br>press one of these buttons.</br></br>Let the fate decide!</h1>
+<div class="button-container">
+    <button onclick="pickCharacter('single')">Single Costume</button>
+    <div id="character-single" class="character-container"></div>
+    <button onclick="pickCharacter('couple')">Double Costume</button>
+    <div id="character-couple" class="character-container"></div>
+</div>
+<footer>© Nika Faynberg 2025</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+    let characters = [];
+    let shownSingle = new Set();
+    let shownCouple = new Set();
+    fetch(`characters.xlsx?t=${new Date().getTime()}`)
+        .then(response => response.arrayBuffer())
+        .then(data => {
+            const workbook = XLSX.read(new Uint8Array(data), { type: 'array' });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            characters = XLSX.utils.sheet_to_json(sheet, { header: 1 }).slice(1).filter(row => row[0] && row[1]);
+        })
+        .catch(error => {
+            console.error('Error loading Excel file:', error);
+        });
+
+    function pickCharacter(type) {
+        const filtered = characters.filter(row => {
+            let category = row[1].toLowerCase().trim();
+            let characterName = row[0].trim();
+            if (type === 'single') {
+                return (category === 'single' || category === 'both') && !shownSingle.has(characterName);
+            } else if (type === 'couple') {
+                return (category === 'couple' || category === 'both') && !shownCouple.has(characterName);
+            }
+            return false;
+        }).map(row => row[0].trim());
+        if (filtered.length === 0) {
+            document.getElementById(`character-${type}`).textContent = "No more new characters available for this option.";
+            return;
+        }
+        const randomIndex = Math.floor(Math.random() * filtered.length);
+        const selectedCharacter = filtered[randomIndex];
+        if (type === 'single') {
+            shownSingle.add(selectedCharacter);
+        } else if (type === 'couple') {
+            shownCouple.add(selectedCharacter);
+        }
+        document.getElementById(`character-${type}`).textContent = selectedCharacter;
+    }
+</script>
+</body>
+</html>
